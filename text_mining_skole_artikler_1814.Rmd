@@ -1,0 +1,71 @@
+---
+title: "Text mining på artikler med skole fra 1814"
+author: "Max Odsbjerg Pedersen"
+date: "22/9/2021"
+output: html_document
+---
+# Pakker
+```{r}
+library(tidyverse)
+library(tidytext)
+```
+
+# Indlæsning af data
+
+Linket giver de artikler fra den danske avissamling hvor der er nævnt skole* i året 1814 (året ny skolelov)
+```{r}
+skole_artikler_1814 <- read_csv("http://labs.statsbiblioteket.dk/labsapi/api/aviser/export/fields?query=skole%2A%20AND%20py%3A1814&fields=link&fields=recordID&fields=timestamp&fields=pwa&fields=cer&fields=fulltext_org&fields=pageUUID&fields=editionUUID&fields=titleUUID&fields=editionId&fields=familyId&fields=newspaper_page&fields=newspaper_edition&fields=lplace&fields=location_name&fields=location_coordinates&max=577&structure=header&structure=content&format=CSV")
+```
+
+# Tidy text format
+Man eksplodere teksten således at hvert ord får sin egen række, men man bibeholder alt øvrigt metadata. Se https://www.tidytextmining.com
+
+```{r}
+skole_artikler_1814 %>% 
+  unnest_tokens(word, fulltext_org) -> skole_artikler_1814_tidy
+```
+
+
+Det er rigtig smart for så kan man tælle på kolonnen "word" - og se hvilke ord bruges mest!
+
+```{r}
+skole_artikler_1814_tidy %>% 
+  count(word, sort = TRUE)
+```
+
+Okay bare en masse stop ord. Vi skal bruge en stopordsliste (sådan en har jeg liggende til 1800tals dansk). Den indlæser vi: 
+
+```{r}
+ stopord <- read_csv("https://gist.githubusercontent.com/maxodsbjerg/4d1e3b1081ebba53a8d2c3aae2a1a070/raw/b53272e7deaa9ece78991c838b4857b6abefb2ce/stopord_18.csv")
+```
+
+Nu vi har listen kan vi fjerne ordene fra listen i vores tidydata frame og lave en ny optælling: 
+
+```{r}
+skole_artikler_1814_tidy %>% 
+  anti_join(stopord) %>% 
+  count(word, sort = TRUE)
+```
+
+```{r}
+skole_artikler_1814 %>% 
+  unnest_tokens(bigram, fulltext_org, token = "ngrams", n = 2) -> skole_artikler_1814_bigram
+```
+
+```{r}
+skole_artikler_1814_bigram %>% 
+  count(bigram, sort = TRUE)
+```
+
+```{r}
+skole_artikler_1814_bigram %>% 
+  count(bigram, sort = TRUE) %>% 
+  separate(bigram, c("ord1", "ord2"), sep = " ")
+```
+
+```{r}
+skole_artikler_1814_bigram %>% 
+  count(bigram, sort = TRUE) %>% 
+  separate(bigram, c("ord1", "ord2"), sep = " ") %>% 
+  filter(ord2 == "skole")
+```
