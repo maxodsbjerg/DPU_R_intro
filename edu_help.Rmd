@@ -1,0 +1,190 @@
+---
+title: "DPU intro - Uddannelseshjælp"
+author: "Max Odsbjerg Pedersen"
+date: "9/17/2021"
+output: html_document
+---
+Dette dokument er en såkaldt R-markdown der integrerer tekst og R-kode. I dokumentet demonstreres det, hvordan man kan bruge R til at indlæse et datasæt og lave databehandling på datasættet. Det sæt der her bruges er en opgørelse over hvor mange mennesker, der fik uddannelseshjælp i København Kommune i perioden januar 2015 til marts 2016.
+# Libraries
+
+I R arbejder man med pakker, som tilføjer forskellige funktionaliteter til grundstammen af R-funktioner. I dette tilfælde er de relevante pakker:
+
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+Dokumentation for de enkelte pakker:
+[tidyverse](https://www.tidyverse.org/packages/)
+[lubridate](https://lubridate.tidyverse.org/)
+
+For mere information om R generelt:
+https://www.r-project.org/
+
+
+
+# Indlæsning af data: 
+
+Data er hentet fra Ope
+https://www.opendata.dk/city-of-copenhagen/uddannelseshjaelp#resource-uddannelseshjaelp_201501_-_201605
+En vigtig del af det at arbejde med data er, hvad man må med det data man har for hånden. Dette datasæt ligger på Open Data DK under licensen "Open Data DK Licens". Dette gør at vi både må kopiere, distrubere og offentliggøre dataet. Man vil kunne se et givent datasæts licens på dets side på Open Data DK.
+
+Vi indlæser dette datasæt der er en opgørelse af hvor mange borgere, der fik uddannelsehjælp i perioden fra januar 2015 til maj 2016. 
+```{r}
+edu_help <- read_csv("data/edu_help.csv")
+```
+
+Husk at inspicere data!
+
+# Hvor mange bydele er der egentlig i data?
+Data er fordelt på 4595 rækker. Hver række svarer til en såkaldt rode og hvor mange der fik uddannelseshjælp inde for denne rode. Hvad i alverden er en rode så? Det viser sig at roder er en administrativ geografisk enhed i Københavns Kommune - læs mere her: https://www.kk.dk/artikel/sådan-er-byen-inddelt
+
+For hver af disse rækker med roder er der også en kolonne der indeholder information om, hvilket overordnet bydel som roden hører til. Men hvor mange bydele er der i data? Lad os få R til at give os svaret.
+
+Det første vi gør i koden herunder er at fortælle R, hvad for noget data vi gerne vil have den til at arbejde på. Derfor skriver vi `edu_help`, da det var det vi kaldte dataet, da vi importerede det. Det næste der sker er, at vi skriver `%>%`. Den kaldes en "pipe" - som i et rør på dansk. Det kan faktisk være gavnligt netop at forestille sig et rør. Vi hælder data ned i rør som fører det videre til det næste skridt i data behandlingen.
+
+Dernæst bruger vi `count`-funktionen til at optælle kolonnen `Bydel navn" 
+
+```{r}
+edu_help %>% 
+  count(`Bydele Navn`)
+```
+Der er altså 11 bydele repræsenteret i data.
+
+
+# Hvor mange har fået uddannelseshjælp inden for en given bydel? 
+Et andet interessant spørgsmål kunne  være at samle antallet af modtagere af uddannelseshjælp på en bydel i stedet for roder. Lad os prøve at få R til det!
+
+Det første vi gør i koden herunder er, lige som før, at fortælle R, hvad for noget data vi gerne vil have den til at arbejde på. Derfor skriver vi `edu_help`, da det var det vi kaldte dataet, da vi importerede det. Det næste der sker er igen, at vi skriver `%>%`. Den kaldes som bekendt en "pipe". Det næste skridt er funktion `filter` som laver en filtrering af data efter vores ønske. Vores ønske er her, at vi kun vil have de rækker i datasættet, hvor `Bydele Navn` er lig med Bispebjerg. Med andre ord så vil vi kun have data fra Bispebjerg. 
+Endnu engang ser vi pipen, `%>%`, som er det rør der hælder resultatet af vores filtering videre. 
+Nu da vi kun har data fra Bispebjerg, så vil vi gerne lave en sammentælling af hvor mange der har fået uddannelseshjælp her. Det gør vi ved at plusse alle tallene i kolonne `Antal borgere`. Dette gøres med funktionen `summarise` og funktionen `sum` og sidstnævnte får at vide, at den skal finde summen af `Antal borgere`. 
+```{r}
+edu_help %>% 
+  filter(`Bydele Navn` == "Bispebjerg") %>% 
+  summarise(total_helped = sum(`Antal borgere`))
+```
+
+# Hvilken bydel får mest uddannelseshjælp
+Et anden interessant ting man kunne undersøge var, hvilket bydel havde flest borgere der modtog uddannelseshjælp i perioden. Hvor vi i den forrige kode fandt det totale antal borgere der havde modtaget uddannelseshjælp for én specifik bydel, så er vi nu interesserede i at finde det for alle bydelene. 
+
+Lige som før så starter vi med at fortælle R, hvad for noget data vi vil arbejde på. Det er stadig `edu_help` og det piper vi videre med ` %>% `. 
+Den næste funktion er `group_by`, der får at vide at den skal gruppere efter `Bydele navn`. Denne funktion gør at R laver beregninger herefter samlet for hver bydel. Dernæst bruger vi igen `summarise`og `sum`-funktionerne, men fordi vi har gruppereret på bydel, så bliver summen udregnet for hver bydel. Den sidste linjes kode er for at få R til at arrangere data således, at den bydel, der har flest antal modtagere af uddannelseshjælp kommer øverst - det sker med `arrange` funktionen og `desc` funktionen. "desc" er forkortelsen for det engelske ord "descending" som betyder "at bevæge sig ned".  
+
+```{r}
+edu_help %>% 
+  group_by(`Bydele Navn`) %>% 
+  summarise(total_helped_bydel = sum(`Antal borgere`)) %>% 
+  arrange(desc(total_helped_bydel))
+```
+
+
+# Hvor stor en del udgør de enkelte bydele af det totalte antal, der har modtaget uddannelseshjælp? 
+I denne kodebid er vi interessede i at finde ud af hvor procent af det totale antal uddannelseshjælpsmodtagere, som hver bydel udgør. 
+
+I koden herunder er de første fire linje identiske med den foregående. Den femte og nye linje starter med `mutate`, der fortæller R, at vi skal til at ændre på data. I denne sammenhæng vil vi gerne lave en kolonne der indeholder det totale antal uddannelseshjælpmodtagere for hele perioden. Denne nye kolonne navngiver vi `total_helped` og det skal være lig med alle tallene fra `total_helped_bydel` plusset sammen. Det klarer `sum`-funktionen for os. 
+Den sidste linje udregner procenten for hver bydel. Endnu en gang fortæller `mutate`funktionen at der sker ændringer på data og denne gang er det skabelsen af en ny kolonne, der indeholder procenten. Denne udregnes ved at dividere total_helped_bydel med total_helper med hinanden og efterfølgende gange med 100. Derved får man, hvor mange procent hver bydels antal uddannelseshjælpsmodtagere udgør af det totale antal uddannelsehjælpsmodtagere for hele kommunen:
+
+```{r}
+edu_help %>% 
+  group_by(`Bydele Navn`) %>% 
+  summarise(total_helped_bydel = sum(`Antal borgere`)) %>% 
+  arrange(desc(total_helped_bydel)) %>% 
+  mutate(total_helped = sum(total_helped_bydel)) %>% 
+  mutate(pct_bydel = (total_helped_bydel/total_helped)*100)
+```
+Dette kan med fordel visualiseres hvilket er opgaven her. 
+
+Her bygges koden med funktionen `ggplot`, der er en funktion der starter visualiseringen med et `+` (det er ggplots pipe) fortæller vi det næste der skal ske og det er funktionen `geom_col`, der fortælle ggplot, at vi vil have et søjlediagram(column). Denne funktion får så at vide at der på x-aksen skal være bydele og y-aksen skal være den procentvise del af uddannelseshjælpsmodtagere.
+Endelig bruger vi `coord_flip` til at vende koordinatsystmet - så bliver det nemmere at læse. 
+
+```{r}
+edu_help %>% 
+  group_by(`Bydele Navn`) %>% 
+  summarise(total_helped_bydel = sum(`Antal borgere`)) %>% 
+  arrange(desc(total_helped_bydel)) %>% 
+  mutate(total_helped = sum(total_helped_bydel)) %>% 
+  mutate(pct_bydel = (total_helped_bydel/total_helped)*100) %>% 
+  mutate(`Bydele Navn` = reorder(`Bydele Navn`, pct_bydel)) %>% 
+  ggplot() +
+  geom_col(aes(x = `Bydele Navn`, y = pct_bydel)) +
+  coord_flip()
+  
+```
+
+
+# Tidsuvikling
+
+
+
+```{r}
+edu_help %>% 
+  filter(`Bydele Navn` == "Amager Vest") %>% 
+  filter(År == 2015) %>% 
+  filter(Måned == "November") %>% 
+  summarise(total = sum(`Antal borgere`))
+```
+```{r}
+edu_help %>% 
+  group_by(`Bydele Navn`, År, Måned) %>% 
+  summarise(bydel_monthly_helped = sum(`Antal borgere`))
+```
+
+
+
+# Tidslighed
+
+Herefter er der sløj dokumentation. Tag dig i agt. Det handler om at få R til at forstå at år og måneder og dermed visualisere tidslig udvikling
+
+Interessant? Se https://r4ds.had.co.nz/dates-and-times.html eller skriv en mail. 
+```{r}
+edu_help %>% 
+  group_by(`Bydele Navn`, År, Måned) %>% 
+  summarise(bydel_monthly_helped = sum(`Antal borgere`)) %>% 
+  ungroup() %>% 
+  mutate(Måned = str_replace(Måned, "Januar", "01")) %>% 
+  mutate(Måned = str_replace(Måned, "Februar", "02")) %>% 
+  mutate(Måned = str_replace(Måned, "Marts", "03")) %>% 
+  mutate(Måned = str_replace(Måned, "April", "04")) %>% 
+  mutate(Måned = str_replace(Måned, "Maj", "05")) %>% 
+  mutate(Måned = str_replace(Måned, "Juni", "06")) %>% 
+  mutate(Måned = str_replace(Måned, "Juli", "07")) %>% 
+  mutate(Måned = str_replace(Måned, "August", "08")) %>%
+  mutate(Måned = str_replace(Måned, "September", "09")) %>% 
+  mutate(Måned = str_replace(Måned, "Oktober", "10")) %>% 
+  mutate(Måned = str_replace(Måned, "November", "11")) %>% 
+  mutate(Måned = str_replace(Måned, "December", "12")) %>% 
+  unite("date", År, Måned, sep = "-") %>% 
+  mutate(date = parse_date_time(date, "ym")) %>% 
+  arrange(date) -> edu_help_date
+```
+  
+  SKriver man navnet på en dataframe, spytter R dataframen ud:
+  
+```{r}
+edu_help_date
+```
+Visualisering:
+
+Udviklingen i månedlig uddannelseshjælp på Nørrebro:
+
+```{r}
+edu_help_date %>% 
+  filter(`Bydele Navn` == "Nørrebro") %>% 
+  ggplot() + 
+  geom_line(aes(x = date, y = bydel_monthly_helped))+
+  labs(
+    title = "Udviklingen i antal person der har modtaget uddannelseshjælp på Nørrebro",
+    subtitle = "Januar 2015 til Marts 2016"
+  )
+```
+```{r}
+edu_help_date %>% 
+  ggplot() + 
+  geom_line(aes(x = date, y = bydel_monthly_helped))+
+  facet_wrap(~`Bydele Navn`)+
+  labs(
+    title = "Udviklingen i antal person der har modtaget uddannelseshjælp på Nørrebro",
+    subtitle = "Januar 2015 til Marts 2016"
+  )
+```
+
+

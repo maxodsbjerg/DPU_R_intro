@@ -1,0 +1,78 @@
+---
+title: "Opgaver til DPU-introduktion til R"
+author: "Max Odsbjerg Pedersen"
+date: "9/22/2021"
+output: html_document
+---
+# Start af pakker
+```{r}
+library(tidyverse)
+```
+
+# Indlæsning af data
+
+Data er hentet fra Open Data DK
+https://www.opendata.dk/city-of-copenhagen/uddannelseshjaelp#resource-uddannelseshjaelp_201501_-_201605
+
+
+```{r}
+edu_help <- read_csv("data/edu_help.csv")
+```
+
+# Opgave 1
+Koden herunder viser det samlede antal borgere i bydelen Bispebjerg, der fik uddannelseshjælp i perioden januar 2015 til marts 2016. Ændre koden således, at du får vist det samme tal, men i stedet for bydelen ""Nørrebro". 
+```{r}
+edu_help %>% 
+  filter(`Bydele Navn` == "Bispebjerg") %>% 
+  summarise(total_helped = sum(`Antal borgere`))
+```
+
+
+# Opgave 2
+Importer datasættet der hedder "toilet_tmf_kk.csv". Filen ligger i mappen "data" i panelet files. Tag udgangspunkt i den måde vi importere datasættet om uddannelseshjælp ovenfor. Husk at kald det noget andet end "edu_help".
+Data er fra https://www.opendata.dk/city-of-copenhagen/toilet_tmf_kk#resource-toilet_tmf_kk.csv
+
+
+```{r}
+
+
+```
+Husk at inspicere din nye dataframe ved at klikke på den i det øverste panel til højre for dette dokument.
+
+# Opgave 3
+
+Hvor mange af toiletterne har handicap-adgang? (hint - se count funktionen i "edu_help.Rmd)
+
+```{r}
+
+
+
+```
+
+# Opgave 4
+Hvor mange af de døgnåbne toiletter har handicapadgang? (hint - filter-funktionen fra edu_help.Rmd og count-funktionen fra før)
+
+```{r}
+
+
+
+```
+# Opgave 5 
+Findes der pissoirer der har handicapadgang? Ingen hints!
+```{r}
+
+
+
+```
+
+# Opgave 6 
+Hvilket postnummer har flest toiletter? Hint: få count funktionen til at sortere
+```{r}
+
+
+
+
+```
+
+# Opgave 7 
+Gør Max opmærksom på at I er kommet i mål og har brug for nye opgaver
